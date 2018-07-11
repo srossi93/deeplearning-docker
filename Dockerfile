@@ -1,7 +1,7 @@
 #Download base image ubuntu 18.04
 FROM ubuntu:18.04
 MAINTAINER Simone Rossi <simone.rossi.93@gmail.com>
- 
+
 ENV DEBIAN_FRONTEND noninteractive
 
 # Update Software repository
@@ -14,26 +14,30 @@ RUN apt -y install lsb-core
 RUN apt -y install curl
 RUN apt -y install vim
 RUN apt -y install tmux
-RUN apt -y install tzdata 
-RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
- && dpkg-reconfigure -f noninteractive tzdata
+RUN apt -y install tzdata
+RUN ln -sf /usr/share/zoneinfo/Europe/Rome /etc/localtime  && dpkg-reconfigure -f noninteractive tzdata
 
 RUN chsh -s /bin/zsh
 
-RUN useradd --create-home --shell /bin/zsh -G sudo  srossi
-RUN echo "srossi:srossi" | chpasswd
 
+
+# Install DL stack
 RUN LAMBDA_REPO=$(mktemp) && wget -O${LAMBDA_REPO} https://lambdal.com/static/files/lambda-stack-repo.deb && \
     dpkg -i ${LAMBDA_REPO} && rm -f ${LAMBDA_REPO}
 RUN apt-get update
 RUN apt-get --yes upgrade
-
-# Install DL stack
 RUN apt install --yes --no-install-recommends lambda-server
 RUN apt install --yes --no-install-recommends lambda-stack-cpu
 
+# Install Latex from main repository
+COPY install-latex /tmp/install-latex
+RUN /tmp/install-latex/install-tl -repository http://mirror.ctan.org/systems/texlive/tlnet -profile /tmp/install-latex/texlive.profile
+RUN rm -rf /tmp/install-latex
 
-# Get user configuration
+
+# Setup user configuration file
+RUN useradd --create-home --shell /bin/zsh -G sudo  srossi
+RUN echo "srossi:srossi" | chpasswd
 
 USER srossi
 WORKDIR /home/srossi
@@ -58,5 +62,13 @@ RUN git clone https://github.com/denysdovhan/spaceship-prompt.git /home/srossi/.
 RUN ln -s "$ZSH_CUSTOM/themes/spaceship-prompt/spaceship.zsh-theme" "$ZSH_CUSTOM/themes/spaceship.zsh-theme"
 COPY .zshrc /home/srossi/.zshrc
 
+
+# Add some Python Module
+RUN pip3 install tensorboardX jupyter-lab matplotlib
+RUN pip install tensorboardX jupyter-lab matplotlib
+COPY .config/matplotlib /home/srossi/.config/matplotlib
+
+# Add shared mount point
+VOLUME /home/srossi/research
 
 CMD ["/bin/zsh"]
