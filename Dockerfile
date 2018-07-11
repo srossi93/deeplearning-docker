@@ -65,7 +65,7 @@ COPY .zshrc /home/srossi/.zshrc
 
 # Add some Python Module
 RUN pip3 install tensorboardX jupyterlab matplotlib
-RUN pip install tensorboardX jupyterlab matplotlib
+
 COPY .config/matplotlib /home/srossi/.config/matplotlib
 
 # Add shared mount point
